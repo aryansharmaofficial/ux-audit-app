@@ -473,7 +473,8 @@
       const res=await fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,description:desc})});
       stopSteps(); document.getElementById('discoverLoading').style.display='none';
       if(!res.ok) throw new Error('Server returned '+res.status+'. Check n8n workflow is active.');
-      const raw=await res.json(); const data=raw.output||raw;
+      const txt=await res.text(); const cleanTxt=txt.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+      const raw=JSON.parse(cleanTxt); const data=raw.output||raw;
       S.company=data.company||{}; S.competitors=(data.competitors||[]).map(c=>({name:c.name,url:c.url})); S.parameters=data.parameters||[];
       if(!S.competitors.length) throw new Error('No competitors found. Check n8n workflow is published and Anthropic credential is set.');
       S.analyses={}; renderReview(); goTo('review');
@@ -554,7 +555,8 @@
       stopSteps(); if(isCurrent)document.getElementById('analyzeLoading').style.display='none';
       if(!res.ok) throw new Error('n8n returned '+res.status+'. Check workflow is published.');
       const text=await res.text(); if(!text||text.trim()==='') throw new Error('Empty response — Claude may be rate-limited. Wait 60 seconds and retry.');
-      let raw; try{raw=JSON.parse(text);}catch{throw new Error('Invalid response — wait 60 seconds and retry.');}
+      const clean=text.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+      let raw; try{raw=JSON.parse(clean);}catch{throw new Error('Invalid response — wait 60 seconds and retry.');}
       const data=raw.output||raw; S.analyses[idx]=data;
       if(isCurrent){await renderResults(data);document.getElementById('auditResults').style.display='block';}
     } catch(e) {
